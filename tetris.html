@@ -49,12 +49,7 @@
     ];
     var ROWS = 20;
     var COLS = 10;
-
-    var cs = document.getElementById('canvas');
-    var ctx = cs.getContext('2d');
-    var score, timer;
     var board = [];
-    var block;
 
     function randomNum(max) {
         return Math.floor(Math.random() * max);
@@ -62,12 +57,12 @@
 
     function Block() {
         var BLOCKS = [BLOCK_O, BLOCK_I, BLOCK_Z, BLOCK_S, BLOCK_L, BLOCK_J, BLOCK_T];
+        var type = randomNum(BLOCKS.length);
 
         this.y = 0;
         this.x = randomNum(COLS / 2);
-        this.type = randomNum(BLOCKS.length);
-        this.shape = BLOCKS[this.type];
-        this.color = ['red', 'orange', 'gold', 'green', 'aqua', 'blue', 'purple'][this.type];
+        this.shape = BLOCKS[type];
+        this.color = ['red', 'orange', 'gold', 'green', 'aqua', 'blue', 'purple'][type];
 
         this.isMovable = function (x_direction, y_direction, block_shape) {
             var next_y = this.y + y_direction;
@@ -110,6 +105,10 @@
             }
         };
     }
+
+    var cs = document.getElementById('canvas');
+    var ctx = cs.getContext('2d');
+    var score, timer, block;
 
     function init() {
         block = new Block();
