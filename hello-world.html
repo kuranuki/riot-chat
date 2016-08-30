@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tetris</title>
+    <style type="text/css">
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+<canvas id='canvas' width='300' height='500'></canvas>
+<div>得点<span id='score'>0<span></div>
+<button onClick="init()">スタート</button>
+</body>
+
+<script>
+    var BLOCK_O = [
+        [
+            [true, true],
+            [true, true]
+        ]
+    ];
+    var BLOCK_I = [
+        [
+            [false, true, false, false],
+            [false, true, false, false],
+            [false, true, false, false],
+            [false, true, false, false]
+        ],
+        [
+            [false, false, false, false],
+            [true, true, true, true],
+            [false, false, false, false],
+            [false, false, false, false]
+        ],
+        [
+            [false, false, true, false],
+            [false, false, true, false],
+            [false, false, true, false],
+            [false, false, true, false]
+        ],
+        [
+            [false, false, false, false],
+            [false, false, false, false],
+            [true, true, true, true],
+            [false, false, false, false]
+        ]
+    ];
+    var BLOCK_Z = [
+        [
+            [true, true, false],
+            [false, true, true],
+            [false, false, false, false]
+        ],
+        [
+            [false, false, true],
+            [false, true, true],
+            [false, true, false]
+        ],
+        [
+            [false, false, false],
+            [true, true, false],
+            [false, true, true]
+        ],
+        [
+            [false, true, false],
+            [true, true, false],
+            [true, false, false]
+        ]
+    ];
+    var BLOCK_S = [
+        [
+            [false, true, true],
+            [true, true, false],
+            [false, false, false]
+        ],
+        [
+            [false, true, false],
+            [false, true, true],
+            [false, false, true]
+        ],
+        [
+            [false, false, false],
+            [false, true, true],
+            [true, true, false]
+        ],
+        [
+            [true, false, false],
+            [true, true, false],
+            [false, true, false]
+        ]
+    ];
+    var BLOCK_L = [
+        [
+            [false, false, true],
+            [true, true, true],
+            [false, false, false]
+        ],
+        [
+            [false, true, false],
+            [false, true, false],
+            [false, true, true]
+        ],
+        [
+            [false, false, false],
+            [true, true, true],
+            [true, false, false]
+        ],
+        [
+            [true, true, false],
+            [false, true, false],
+            [false, true, false]
+        ]
+    ];
+    var BLOCK_J = [
+        [
+            [false, true, false],
+            [false, true, false],
+            [true, true, false]
+        ],
+        [
+            [true, false, false],
+            [true, true, true],
+            [false, false, false]
+        ],
+        [
+            [false, true, true],
+            [false, true, false],
+            [false, true, false]
+        ],
+        [
+            [false, false, false],
+            [true, true, true],
+            [false, false, true]
+        ]
+    ];
+    var BLOCK_T = [
+        [
+            [false, false, false],
+            [true, true, true],
+            [false, true, false]
+        ],
+        [
+            [false, true, false],
+            [true, true, false],
+            [false, true, false]
+        ],
+        [
+            [false, true, false],
+            [true, true, true],
+            [false, false, false]
+        ],
+        [
+            [false, true, false],
+            [false, true, true],
+            [false, true, false]
+        ]
+    ];
+    var BLOCKS = [BLOCK_O, BLOCK_I, BLOCK_Z, BLOCK_S, BLOCK_L, BLOCK_J, BLOCK_T];
+    var COLORS = ['red', 'orange', 'gold', 'green', 'aqua', 'blue', 'purple'];
+    var ROWS = 20;
+    var COLS = 10;
+
+    var cs = document.getElementById('canvas');
+    var ctx = cs.getContext('2d');
+    var score, timer;
+    var board = [];
+    var block = new Block();
+
+    function randomNum(max) {
+        return Math.floor(Math.random() * max);
+    }
+
+    function Block() {
+        this.y = 0;
+        this.x = randomNum(COLS / 2);
+        this.type = randomNum(BLOCKS.length);
+        this.turn = randomNum(BLOCKS[this.type].length);
+        this.color = COLORS[this.type];
+        this.shape = function () {
+            return BLOCKS[this.type][this.turn];
+        };
+        this.isMovable = function (x_direction, y_direction, block_shape) {
+            var next_y = this.y + y_direction;
+            var next_x = this.x + x_direction;
+            for (var y = 0; y < block_shape.length; y++) {
+                for (var x = 0; x < block_shape[y].length; x++) {
+                    if (block_shape[y][x]) {
+                        if (next_y + y >= ROWS) return false;
+                        if (next_x + x >= COLS || next_x + x < 0) return false;
+                        if (board[y + next_y][x + next_x]) return false;
+                    }
+                }
+            }
+            return true;
+        };
+        this.moveLeft = function () {
+            if (this.isMovable(-1, 0, this.shape())) this.x--;
+        };
+        this.moveRight = function () {
+            if (this.isMovable(1, 0, this.shape())) this.x++;
+        };
+        this.moveDown = function () {
+            if (this.isMovable(0, 1, this.shape())) this.y++;
+        };
+        this.rotate = function() {
+            var nextTurn = (this.turn + 1) % BLOCKS[this.type].length;
+            if ( this.isMovable(0, 0, BLOCKS[this.type][nextTurn]) ) {
+                this.turn = nextTurn;
+            }
+        }
+    }
+
+    function drawRect(array, color, offsetx, offsety) {
+        ctx.fillStyle = color;
+        for (var y = 0; y < array.length; y++) {
+            for (var x = 0; x < array[y].length; x++) {
+                if (array[y][x]) {
+				    var cellHeight = cs.height / ROWS;
+				    var cellWidth = cs.width / COLS;
+			        ctx.fillRect(cellWidth * (x + offsetx), cellHeight * (y + offsety), cellWidth, cellHeight);
+                }
+            }
+        }
+    }
+    
+    function clearLines(board) {
+        var completedLine = 0;
+        for (var y = 0; y < board.length; y++) {
+            if (board[y].every(function (element) { return element === true; })) {
+                board.splice(y, 1);
+                board.unshift(new Array(COLS));
+                for (var x = 0; x < COLS; x++) {
+                    board[0][x] = false;
+                }
+                completedLine++;
+                score += completedLine * 10;
+            }
+        }
+    }
+
+    function init() {
+        score = 0;
+        for (var y = 0; y < ROWS; y++) {
+            board[y] = [];
+            for (var x = 0; x < COLS; x++) {
+                board[y][x] = false;
+            }
+        }
+        clearInterval(timer);
+        timer = setInterval(update, 200);
+    }
+
+	function update() {
+        ctx.clearRect(0, 0, cs.width, cs.height);
+        var block_shape = block.shape();
+    	drawRect(block_shape, block.color, block.x, block.y);
+    	drawRect(board, 'gray', 0, 0);
+
+        if (block.isMovable(0, 1, block_shape)) {
+            block.y++;
+        } else {
+	        for (var y = 0; y < block_shape.length; y++) {
+	            for (var x = 0; x < block_shape[y].length; x++) {
+	                if (block_shape[y][x]) {
+	                	if (board[y + block.y][x + block.x]) {
+					    	drawRect(block_shape, block.color, block.x, block.y);
+					        clearInterval(timer);
+					        alert("今回の得点は" + score + "点だよ！");
+					        return;
+	                	} else {
+		                    board[y + block.y][x + block.x] = true;
+	                	}
+	                }
+				}
+	        }
+
+			clearLines(board);
+
+            block = new Block();
+        }
+        document.getElementById('score').innerHTML = score;
+    }
+
+    document.onkeydown = function (e) {
+        switch (e.keyCode) {
+            case 37:
+                block.moveLeft();
+                break;
+            case 38:
+                block.rotate();
+                break;
+            case 39:
+                block.moveRight();
+                break;
+            case 40:
+                block.moveDown();
+                break;
+        }
+    };
+</script>
+</html>
