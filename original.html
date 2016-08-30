@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tetris</title>
+    <style type="text/css">
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+<canvas id='canvas' width='300' height='500'></canvas>
+<div>
+    得点
+    <span id='score'>0<span>
+</div>
+<button onClick="init()">
+    スタート
+</button>
+
+</body>
+<script>
+    var cs = document.getElementById('canvas');
+    var ctx = cs.getContext('2d');
+    var score, timer;
+    var BLOCK_O = [
+        [
+            [true, true],
+            [true, true]
+        ]
+    ];
+    var BLOCK_I = [
+        [
+            [false, true, false, false],
+            [false, true, false, false],
+            [false, true, false, false],
+            [false, true, false, false]
+        ],
+        [
+            [false, false, false, false],
+            [true, true, true, true],
+            [false, false, false, false],
+            [false, false, false, false]
+        ],
+        [
+            [false, false, true, false],
+            [false, false, true, false],
+            [false, false, true, false],
+            [false, false, true, false]
+        ],
+        [
+            [false, false, false, false],
+            [false, false, false, false],
+            [true, true, true, true],
+            [false, false, false, false]
+        ]
+    ];
+    var BLOCK_Z = [
+        [
+            [true, true, false],
+            [false, true, true],
+            [false, false, false, false]
+        ],
+        [
+            [false, false, true],
+            [false, true, true],
+            [false, true, false]
+        ],
+        [
+            [false, false, false],
+            [true, true, false],
+            [false, true, true]
+        ],
+        [
+            [false, true, false],
+            [true, true, false],
+            [true, false, false]
+        ]
+    ];
+    var BLOCK_S = [
+        [
+            [false, true, true],
+            [true, true, false],
+            [false, false, false]
+        ],
+        [
+            [false, true, false],
+            [false, true, true],
+            [false, false, true]
+        ],
+        [
+            [false, false, false],
+            [false, true, true],
+            [true, true, false]
+        ],
+        [
+            [true, false, false],
+            [true, true, false],
+            [false, true, false]
+        ]
+    ];
+    var BLOCK_L = [
+        [
+            [false, false, true],
+            [true, true, true],
+            [false, false, false]
+        ],
+        [
+            [false, true, false],
+            [false, true, false],
+            [false, true, true]
+        ],
+        [
+            [false, false, false],
+            [true, true, true],
+            [true, false, false]
+        ],
+        [
+            [true, true, false],
+            [false, true, false],
+            [false, true, false]
+        ]
+    ];
+    var BLOCK_J = [
+        [
+            [false, true, false],
+            [false, true, false],
+            [true, true, false]
+        ],
+        [
+            [true, false, false],
+            [true, true, true],
+            [false, false, false]
+        ],
+        [
+            [false, true, true],
+            [false, true, false],
+            [false, true, false]
+        ],
+        [
+            [false, false, false],
+            [true, true, true],
+            [false, false, true]
+        ]
+    ];
+    var BLOCK_T = [
+        [
+            [false, false, false],
+            [true, true, true],
+            [false, true, false]
+        ],
+        [
+            [false, true, false],
+            [true, true, false],
+            [false, true, false]
+        ],
+        [
+            [false, true, false],
+            [true, true, true],
+            [false, false, false]
+        ],
+        [
+            [false, true, false],
+            [false, true, true],
+            [false, true, false]
+        ]
+    ];
+    var BLOCKS = [BLOCK_O, BLOCK_I, BLOCK_Z, BLOCK_S, BLOCK_L, BLOCK_J, BLOCK_T];
+    var COLORS = ['red', 'orange', 'gold', 'green', 'aqua', 'blue', 'purple'];
+    var ROWS = 20;
+    var COLS = 10;
+    var BOARD_CELL_WIDTH = cs.width / COLS;
+    var BOARD_CELL_HEIGHT = cs.height / ROWS;
+    var board = [];
+    var block = new Block();
+    function Block() {
+        this.y = 0;
+        this.x = randomNum(COLS / 2);
+        this.type = randomNum(BLOCKS.length);
+        this.turn = randomNum(BLOCKS[this.type].length);
+        this.color = COLORS[this.type];
+        this.update = function () {
+            if (this.isMovable(0, 1)) {
+                this.y++;
+                draw(this);
+            } else {
+                freeze(this);
+                block = new Block();
+            }
+        }
+        this.shape = function () {
+            return BLOCKS[this.type][this.turn];
+        }
+        this.isMovable = function (x_direction, y_direction, rotated_block) {
+            var next_x = this.x + x_direction;
+            var next_y = this.y + y_direction;
+            if (rotated_block) {
+              block_shape = rotated_block;
+            } else {
+              block_shape = this.shape();
+            }
+            for (var y = 0; y < block_shape.length; y++) {
+                for (var x = 0; x < block_shape[y].length; x++) {
+                    if (block_shape[y][x]) {
+                        if (next_y + y >= ROWS) return false;
+                        if (next_x + x >= COLS || next_x + x < 0) return false;
+                        if (board[y + next_y][x + next_x]) return false;
+                    }
+                }
+            }
+            return true;
+        }
+        this.moveLeft = function () {
+            if (this.isMovable(-1, 0)) this.x--;
+        }
+        this.moveRight = function () {
+            if (this.isMovable(1, 0)) this.x++;
+        }
+        this.moveDown = function () {
+            if (this.isMovable(0, 1)) this.y++;
+        }
+        this.rotate = function() {
+            // var nextTurn = BLOCKS[this.type][this.turn + 1] ? this.turn + 1 : 0;
+            var nextTurn = (this.turn + 1) % BLOCKS[this.type].length;
+            if ( this.isMovable(0, 0, BLOCKS[this.type][nextTurn]) ) {
+                this.turn = nextTurn;
+            }
+        }
+    }
+    function randomNum(max) {
+        return Math.floor(Math.random() * max);
+    }
+    function init() {
+        score = 0;
+        for (var y = 0; y < ROWS; y++) {
+            board[y] = [];
+            for (var x = 0; x < COLS; x++) {
+                board[y][x] = false;
+            }
+        }
+        clearInterval(timer);
+        timer = setInterval(function () {
+            block.update();
+        }, 300);
+    }
+    function draw(block) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        var block_shape = block.shape();
+        // blockの描画
+        for (var y = 0; y < block_shape.length; y++) {
+            for (var x = 0; x < block_shape[y].length; x++) {
+                if (block_shape[y][x]) {
+                    drawBlock(block.color, x + block.x, y + block.y);
+                }
+            }
+        }
+        // fieldの描画
+        for (var y = 0; y < ROWS; y++) {
+            for (var x = 0; x < COLS; x++) {
+                if (board[y][x]) {
+                    drawBlock('gray', x, y);
+                }
+            }
+        }
+    }
+    function drawBlock(color, x, y) {
+        ctx.fillStyle = color;
+        ctx.fillRect(BOARD_CELL_WIDTH * x, BOARD_CELL_HEIGHT * y, BOARD_CELL_WIDTH, BOARD_CELL_HEIGHT);
+    }
+    function freeze(block) {
+        var block_shape = block.shape();
+        for (var y = 0; y < block_shape.length; y++) {
+            for (var x = 0; x < block_shape[y].length; x++) {
+                if (block_shape[y][x]) {
+                    board[y + block.y][x + block.x] = block_shape[y][x];
+                    if (y + block.y <= 0) {
+                        draw(block);
+                        gameOver();
+                    }
+                }
+            }
+        }
+        countCompletedLine();
+    }
+    function countCompletedLine() {
+        var completedLine = 0;
+        for (var y = ROWS - 1; y >= 0; y--) {
+            if (board[y].every(function (element) {
+                        return element === true
+                    })) {
+                completedLine++;
+                board.splice(y, 1);
+                board.unshift(new Array(COLS));
+                for (var x = 0; x < COLS; x++) {
+                    board[0][x] = false;
+                }
+                score += completedLine * 10
+                document.getElementById('score').innerHTML = score;
+            }
+        }
+    }
+    document.onkeydown = function (e) {
+        keyCode = e.keyCode;
+        switch (keyCode) {
+            case 37:
+                block.moveLeft();
+                break;
+            case 38:
+                // rotate
+                block.rotate();
+                break;
+            case 39:
+                block.moveRight();
+                break;
+            case 40:
+                block.moveDown();
+                break;
+        }
+    }
+    function gameOver() {
+        alert("今回の得点は" + score + "点だよ！");
+        clearInterval(timer);
+    }
+</script>
+</html>

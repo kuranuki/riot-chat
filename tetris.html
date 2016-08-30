@@ -111,34 +111,6 @@
         };
     }
 
-    function drawRect(array, color, offsetx, offsety) {
-        ctx.fillStyle = color;
-        for (var y = 0; y < array.length; y++) {
-            for (var x = 0; x < array[y].length; x++) {
-                if (array[y][x]) {
-				    var cellHeight = cs.height / ROWS;
-				    var cellWidth = cs.width / COLS;
-			        ctx.fillRect(cellWidth * (x + offsetx), cellHeight * (y + offsety), cellWidth, cellHeight);
-                }
-            }
-        }
-    }
-    
-    function clearLines(board) {
-        var completedLine = 0;
-        for (var y = 0; y < board.length; y++) {
-            if (board[y].every(function (element) { return element === true; })) {
-                board.splice(y, 1);
-                board.unshift(new Array);
-                for (var x = 0; x < COLS; x++) {
-                    board[0][x] = false;
-                }
-                completedLine++;
-                score += completedLine * 10;
-            }
-        }
-    }
-
     function init() {
         score = 0;
         for (var y = 0; y < ROWS; y++) {
@@ -177,6 +149,34 @@
             block = new Block();
         }
         document.getElementById('score').innerHTML = score;
+    }
+
+    function drawRect(array, color, offsetx, offsety) {
+        ctx.fillStyle = color;
+        for (var y = 0; y < array.length; y++) {
+            for (var x = 0; x < array[y].length; x++) {
+                if (array[y][x]) {
+				    var cellHeight = cs.height / ROWS;
+				    var cellWidth = cs.width / COLS;
+			        ctx.fillRect(cellWidth * (x + offsetx), cellHeight * (y + offsety), cellWidth, cellHeight);
+                }
+            }
+        }
+    }
+    
+    function clearLines(board) {
+        var completedLine = 0;
+        for (var y = 0; y < board.length; y++) {
+            if (board[y].every(function (element) { return element === true; })) {
+                board.splice(y, 1);
+                board.unshift(new Array);
+                for (var x = 0; x < COLS; x++) {
+                    board[0][x] = false;
+                }
+                completedLine++;
+                score += completedLine * 10;
+            }
+        }
     }
 
     document.onkeydown = function (e) {
