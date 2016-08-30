@@ -54,7 +54,7 @@
     var ctx = cs.getContext('2d');
     var score, timer;
     var board = [];
-    var block = new Block();
+    var block;
 
     function randomNum(max) {
         return Math.floor(Math.random() * max);
@@ -112,6 +112,7 @@
     }
 
     function init() {
+        block = new Block();
         score = 0;
         for (var y = 0; y < ROWS; y++) {
             board[y] = [];
