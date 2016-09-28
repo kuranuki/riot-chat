@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+<head>
+	<meta charset="utf-8">
+	<title>Breakout</title>
+	<style type="text/css">
+		canvas {
+			border: 1px solid black;
+		}
+	</style>
+</head>
+
+<body onload='init()'>
+	<canvas id='canvas' width='400' height='400'></canvas>
+</body>
+<script>
+	
+	var cs = document.getElementById('canvas');
+	var ctx = cs.getContext('2d');
+
+	function Ball(x, y){
+		this.x = x;
+		this.y = y;
+		this.dx = 5;
+		this.dy = -5;
+		this.shape = '●';
+		this.color = 'blue';
+		this.draw = function(){
+			ctx.fillStyle = this.color;
+			ctx.fillText(this.shape, this.x, this.y);
+		};
+		this.move = function(){
+			this.x += this.dx;
+			this.y += this.dy;
+			
+			if (this.x <= 0 || this.x >= cs.width){
+				this.dx = -this.dx;
+			}
+			if (this.y <= 0){
+				this.dy = -this.dy;
+			} 
+		};
+		
+		this.hitedBarMove = function(){
+			this.dy = -this.dy;
+		};
+		
+		this.hitedBlockMove = function(){
+			if ( Math.random() < 0.5 ){
+					this.dx = -this.dx;
+				} else {
+					this.dy = -this.dy;
+				}
+		};
+		
+		this.checkHitBlock = function() {
+			var number = null;
+			blocks.some(function (block, index) {
+				if (block.x === this.x && block.y === this.y) return number = index;
+			}, this);
+			return number;
+		};
+		
+	}
+	
+	function Bar(){
+		this.x = 150;
+		this.y = 340;
+		this.width = 100;
+		this.height = 10;
+		this.center = this.x + this.width / 2;
+		this.dx = 10;
+		this.moveRight = function(){
+			this.x = Math.min(cs.width - this.width, this.x + this.dx);
+		};
+		this.moveLeft = function(){
+			this.x = Math.max(0, this.x - this.dx);
+		};
+		
+		this.isHitedBall = function(){
+			if ( this.y === ball.y && this.x <= ball.x && ball.x <= this.x + this.width ) {
+				return true;
+			}
+		};
+		
+		
+		this.draw = function(){
+			ctx.fillStyle = 'gray';
+			ctx.fillRect(this.x, this.y, this.width, this.height);
+		};
+	}
+	
+	function Block(index){
+		this.x = (index + 1) * 40;
+		this.y = 100;
+		this.shape = '✨';
+		this.draw = function(){
+			ctx.fillText(this.shape, this.x, this.y);
+		};
+	}
+	
+	var ball,
+		bar,
+		blocks,
+		timer,
+		balls = 3;
+	
+	function init(){
+		blocks = [];
+		for (var blocksCount = 9; blocksCount > 0; blocksCount--) {
+			blocks.push(new Block(blocks.length));
+		}
+		
+		bar = new Bar();
+		ball = new Ball(bar.center, bar.y);
+		
+		clearInterval(timer);
+        timer = setInterval(update, 60);
+	}
+	
+	function update(){
+		ball.move();
+		
+		if (bar.isHitedBall()) {
+			ball.hitedBarMove();
+		}
+			
+		var hitedBlock = ball.checkHitBlock();
+		
+		if ( hitedBlock !== null ) {
+			blocks.splice(hitedBlock, 1);
+			ball.hitedBlockMove();
+		}
+		
+		draw();
+		
+		if (ball.y > cs.height) {
+			balls--;
+			ball.x = bar.center;
+			ball.y = bar.y;
+		}
+		
+		if (blocks.length <= 0){
+			gameOver('win');
+		} else if (balls == 0){
+			gameOver('losing');
+		}
+
+	}
+	
+	function gameOver(flag){
+		if (flag === 'win'){
+			alert("おめでとう！ゲームクリア!!");
+		} else if (flag === 'losing'){
+			alert("残念!ゲームに失敗しました");
+		}
+		clearInterval(timer);
+		return true;
+	} 
+	
+	function draw(){
+		ctx.clearRect(0, 0, cs.width, cs.height);
+		ball.draw();
+		bar.draw();
+
+		blocks.forEach(function (block){
+			block.draw();
+		});
+	}
+	
+	document.onkeydown = function (e) {
+		switch (e.keyCode) {
+			case 37: bar.moveLeft(); break;
+            case 39: bar.moveRight(); break;
+            case 32:
+            	if (gameOver()) {
+            		init(); 
+            	}
+        }
+    };
+	
+</script>
+
+
+
+</html>
